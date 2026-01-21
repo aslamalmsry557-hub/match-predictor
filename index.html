@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>متنبئ المباريات</title>
+<title>توقّع المباريات</title>
 
 <style>
 body{
@@ -12,99 +12,139 @@ body{
   font-family:Arial;
   padding:20px;
 }
-
+h1{
+  color:#00ffcc;
+  text-align:center;
+}
+h2{
+  color:#00ffcc;
+}
+.info{
+  background:#1a1a1a;
+  padding:12px;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:14px;
+  line-height:1.7;
+}
 textarea{
   width:100%;
-  height:120px;
-  background:#222;
-  color:#0f0;
-  border:1px solid #333;
+  min-height:90px;
+  margin:10px 0;
   padding:10px;
+  background:#1a1a1a;
+  color:#fff;
+  border:1px solid #333;
+  border-radius:8px;
+  resize:none;
+}
+.counter{
+  font-size:13px;
   margin-bottom:10px;
 }
-
 button{
   width:100%;
-  padding:15px;
-  background:#00ffd0;
+  padding:12px;
+  background:#00ffcc;
   border:none;
   font-size:18px;
+  font-weight:bold;
+  border-radius:10px;
   cursor:pointer;
 }
-
-#output{
+.result{
   margin-top:20px;
+  font-size:18px;
   background:#1a1a1a;
-  padding:15px;
-  border-radius:6px;
+  padding:12px;
+  border-radius:8px;
+}
+.error{
+  color:#ff6b6b;
+  font-size:14px;
+  margin-top:5px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>الفريق الموجود على الشمال</h2>
-<textarea id="home" placeholder="مثال:
-1-0
-0-0
-2-1
-1-1
-0-1"></textarea>
+<h1>⚽ توقّع المباريات</h1>
 
-<h2>الفريق الموجود على اليمين</h2>
-<textarea id="away" placeholder="مثال:
-0-1
-1-0
-0-0
-2-1
-1-1"></textarea>
+<div class="info">
+📌 <b>طريقة الاستخدام:</b><br>
+• انسخ <b>آخر 5 مباريات لكل فريق</b> (مباراة في كل سطر).<br>
+• <b>الخانة اللي فوق</b> = الفريق الموجود على <b>الشمال</b>.<br>
+• <b>الخانة اللي تحت</b> = الفريق الموجود على <b>اليمين</b>.<br>
+• الصيغة الصحيحة: <b>1-0</b>
+</div>
+
+<h2>⬆️ الفريق الموجود على الشمال</h2>
+<textarea id="home" oninput="checkInput('home')"></textarea>
+<div class="counter" id="homeCount">عدد المباريات: 0</div>
+<div class="error" id="homeError"></div>
+
+<h2>⬇️ الفريق الموجود على اليمين</h2>
+<textarea id="away" oninput="checkInput('away')"></textarea>
+<div class="counter" id="awayCount">عدد المباريات: 0</div>
+<div class="error" id="awayError"></div>
 
 <button onclick="calculate()">احسب</button>
 
-<div id="output"></div>
+<div class="result" id="output"></div>
 
 <script>
 function parseMatches(text){
-  let lines = text.split(/\n|,/).map(x=>x.trim()).filter(x=>x);
-  let arr = [];
-  for(let l of lines){
-    if(!/^\d+-\d+$/.test(l)) return null;
-    let [f,a] = l.split("-").map(Number);
-    arr.push({f,a});
-  }
-  return arr;
+  let lines = text.split("\n").map(x=>x.trim()).filter(x=>x);
+  let valid=[], invalid=false;
+
+  lines.forEach(l=>{
+    if(/^\d+-\d+$/.test(l)){
+      let [f,a]=l.split("-").map(Number);
+      valid.push({f,a});
+    } else invalid=true;
+  });
+
+  return {matches:valid, invalid};
+}
+
+function checkInput(type){
+  let p=parseMatches(document.getElementById(type).value);
+  document.getElementById(type+"Count").innerText="عدد المباريات: "+p.matches.length;
+  document.getElementById(type+"Error").innerText=p.invalid?"❌ صيغة غلط":"";
 }
 
 function calculate(){
-  let out = document.getElementById("output");
-  let home = parseMatches(document.getElementById("home").value);
-  let away = parseMatches(document.getElementById("away").value);
+  let h=parseMatches(home.value), a=parseMatches(away.value);
+  let out=document.getElementById("output");
 
-  if(!home || !away){
-    out.innerHTML = "❌ صيغة النتائج غلط";
-    return;
+  if(h.invalid||a.invalid){out.innerText="❌ أصلح الصيغة";return;}
+  if(h.matches.length<5||a.matches.length<5){out.innerText="⚠️ لازم 5 مباريات";return;}
+
+  let hCS=h.matches.filter(x=>x.a===0).length;
+  let aCS=a.matches.filter(x=>x.a===0).length;
+
+  let hGG=h.matches.filter(x=>x.f>0&&x.a>0).length;
+  let aGG=a.matches.filter(x=>x.f>0&&x.a>0).length;
+
+  let GG=(hGG>=3&&aGG>=3)?"نعم":"لا";
+
+  let defensive=(hCS>=3&&aCS>=3&&GG==="لا");
+
+  let winner="تعادل";
+  if(!defensive){
+    winner=(hCS>aCS)?"الفريق الموجود على الشمال":"الفريق الموجود على اليمين";
   }
 
-  if(home.length < 5 || away.length < 5){
-    out.innerHTML = "⚠️ لازم 5 مباريات لكل فريق";
-    return;
-  }
+  let score;
+  if(defensive) score="0-0";
+  else if(GG==="نعم") score="1-1";
+  else score="1-0";
 
-  let hGG = home.filter(x=>x.f>0 && x.a>0).length;
-  let aGG = away.filter(x=>x.f>0 && x.a>0).length;
-  let GG = (hGG>=3 && aGG>=3) ? "نعم" : "لا";
-
-  let hAvg = home.reduce((s,x)=>s+x.f,0)/5;
-  let aAvg = away.reduce((s,x)=>s+x.f,0)/5;
-
-  let winner = hAvg >= aAvg ? "الفريق الموجود على الشمال" : "الفريق الموجود على اليمين";
-  let score = GG === "نعم" ? "1-1" : (hAvg >= aAvg ? "1-0" : "0-1");
-
-  out.innerHTML = `
-  🏆 <b>الفائز المتوقع:</b> ${winner}<br>
-  ⚽ <b>GG:</b> ${GG}<br>
-  📊 <b>النتيجة الأقرب:</b> ${score}
-  `;
+  out.innerHTML=
+  `🏆 <b>الفائز المتوقع:</b> ${winner}<br>
+   ⚽ <b>GG:</b> ${GG}<br>
+   📊 <b>النتيجة الأقرب:</b> ${score}`;
 }
 </script>
 
