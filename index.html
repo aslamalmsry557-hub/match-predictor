@@ -21,17 +21,6 @@ function parseMatches(text){
   return {matches: valid, invalid: invalid};
 }
 
-function checkInput(type){
-  let box = document.getElementById(type).value;
-  let parsed = parseMatches(box);
-
-  document.getElementById(type+"Count").innerText =
-    "عدد المباريات: " + parsed.matches.length;
-
-  document.getElementById(type+"Error").innerText =
-    parsed.invalid ? "❌ في نتيجة مكتوبة بصيغة غلط" : "";
-}
-
 function calculate(){
   let homeData = parseMatches(document.getElementById("home").value);
   let awayData = parseMatches(document.getElementById("away").value);
@@ -58,26 +47,50 @@ function calculate(){
 
   let GG = (hGG>=3 && aGG>=3) ? "نعم" : "لا";
 
-  // ✅ متغير منطقي حقيقي
-  let isHomeWinner = hCS > aCS;
-  let winner = isHomeWinner
-    ? "الفريق الموجود على الشمال"
-    : "الفريق الموجود على اليمين";
-
-  // 📊 متوسط الأهداف (للذكاء البسيط)
+  // 📊 متوسط الأهداف
   let hAvgGoals = home.reduce((s,x)=>s+x.f,0) / home.length;
   let aAvgGoals = away.reduce((s,x)=>s+x.f,0) / away.length;
 
-  // ✅ النتيجة الأقرب (منطق نهائي)
+  // 🔒 عدد 0-0
+  let zeroZeroCount = [...home, ...away]
+    .filter(x=>x.f===0 && x.a===0).length;
+
+  let diff = Math.abs(hAvgGoals - aAvgGoals);
+
+  let winner = "";
   let score = "";
 
-  if(GG === "نعم"){
-    score = "1-1";
-  } else {
-    if(isHomeWinner){
-      score = hAvgGoals >= 2 ? "2-0" : "1-0";
+  // =========================
+  // 🟡 فلتر التعادل الذكي
+  // =========================
+  if(
+    GG === "لا" &&
+    zeroZeroCount >= 2 &&
+    diff <= 0.3
+  ){
+    winner = "تعادل";
+    score = "0-0";
+  }
+  else {
+    // =========================
+    // 🏆 اختيار الفائز
+    // =========================
+    let isHomeWinner = hCS > aCS;
+    winner = isHomeWinner
+      ? "الفريق الموجود على الشمال"
+      : "الفريق الموجود على اليمين";
+
+    // =========================
+    // 🎯 النتيجة الأقرب
+    // =========================
+    if(GG === "نعم"){
+      score = "1-1";
     } else {
-      score = aAvgGoals >= 2 ? "0-2" : "0-1";
+      if(isHomeWinner){
+        score = hAvgGoals >= 1.5 ? "1-0" : "0-0";
+      } else {
+        score = aAvgGoals >= 1.5 ? "0-1" : "0-0";
+      }
     }
   }
 
@@ -87,4 +100,4 @@ function calculate(){
   📊 <b>النتيجة الأقرب:</b> ${score}
   `;
 }
-    </script>
+  </script>
