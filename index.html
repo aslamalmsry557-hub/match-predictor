@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Predictor</title>
+<style>
+body{background:#111;color:#fff;font-family:Arial;padding:20px}
+h2{color:#00ffcc}
+input{width:70px;margin:4px;text-align:center;padding:6px}
+button{padding:10px 15px;background:#00ffcc;border:none;font-size:16px}
+.result{margin-top:20px;font-size:18px}
+</style>
+</head>
+<body>
+
+<h2>Home Team</h2>
+<input id="h1"><input id="h2"><input id="h3"><input id="h4"><input id="h5">
+
+<h2>Away Team</h2>
+<input id="a1"><input id="a2"><input id="a3"><input id="a4"><input id="a5">
+
+<br><br>
+<button onclick="calc()">Calculate</button>
+
+<div class="result" id="out"></div>
+
+<script>
+function p(v){let s=v.split('-');return{f:+s[0],a:+s[1]}}
+function calc(){
+ let H=[h1,h2,h3,h4,h5].map(x=>p(x.value));
+ let A=[a1,a2,a3,a4,a5].map(x=>p(x.value));
+ let hCS=H.filter(x=>x.a==0).length;
+ let aCS=A.filter(x=>x.a==0).length;
+ let hGG=H.filter(x=>x.f>0&&x.a>0).length;
+ let aGG=A.filter(x=>x.f>0&&x.a>0).length;
+ let GG=(hGG>=3&&aGG>=3)?"YES":"NO";
+ let W=(aCS>hCS)?"Away":"Home";
+ let S=(GG=="NO")?"0-1":"1-1";
+ out.innerHTML=`Winner: ${W}<br>GG: ${GG}<br>Score: ${S}`;
+}
+</script>
+
+</body>
+</html>
